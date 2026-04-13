@@ -22,7 +22,7 @@ export default async function DonorLayout({ children }: { children: React.ReactN
       {/* Top nav */}
       <header className="border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center">
-          <Image src="/logo.png" alt="IEON" width={48} height={48} className="object-contain" />
+          <Image src="/logo.png" alt="IEON" width={56} height={56} className="object-contain" />
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-zinc-400">{donor?.name}</span>
