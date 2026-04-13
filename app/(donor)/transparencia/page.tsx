@@ -1,5 +1,6 @@
 import { createClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import DownloadButton from './DownloadButton'
 
 export default async function TransparenciaPage() {
   const supabase = await createClient()
@@ -26,32 +27,33 @@ export default async function TransparenciaPage() {
           <p>Nenhum documento publicado ainda.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-3">
           {documents.map((doc: any) => (
-            <a
-              key={doc.id}
-              href={doc.file_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-zinc-900 border border-zinc-800 hover:border-orange rounded-xl p-5 transition-colors group"
-            >
-              <div className="flex items-start gap-4">
-                <div className="text-2xl">
-                  {doc.file_type === 'pdf' ? '📄' : doc.file_type === 'image' ? '🖼️' : '🎥'}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-white group-hover:text-orange transition-colors truncate">
-                    {doc.title}
-                  </p>
-                  {doc.description && (
-                    <p className="text-xs text-zinc-500 mt-1 line-clamp-2">{doc.description}</p>
-                  )}
-                  <p className="text-xs text-zinc-600 mt-2">
-                    {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
+            <div key={doc.id} className="bg-zinc-900 border border-zinc-800 rounded-xl px-5 py-4 flex items-center gap-4">
+              <span className="text-2xl shrink-0">
+                {doc.file_type === 'pdf' ? '📄' : '🖼️'}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-white truncate">{doc.title}</p>
+                {doc.description && (
+                  <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{doc.description}</p>
+                )}
+                <p className="text-xs text-zinc-600 mt-1">
+                  {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                </p>
               </div>
-            </a>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={doc.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg text-xs hover:bg-zinc-700 transition-colors"
+                >
+                  Visualizar
+                </a>
+                <DownloadButton url={doc.file_url} filename={doc.title} />
+              </div>
+            </div>
           ))}
         </div>
       )}

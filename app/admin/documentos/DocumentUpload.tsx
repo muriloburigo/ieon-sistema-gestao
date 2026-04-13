@@ -34,11 +34,7 @@ export default function DocumentUpload() {
 
     const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
 
-    const fileType = file.type.includes('pdf')
-      ? 'pdf'
-      : file.type.includes('image')
-      ? 'image'
-      : 'video'
+    const fileType = file.type.includes('pdf') ? 'pdf' : 'image'
 
     await supabase.from('documents').insert({
       title,
@@ -94,10 +90,10 @@ export default function DocumentUpload() {
           </div>
 
           <div>
-            <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wider">Arquivo (PDF, imagem ou vídeo)</label>
+            <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wider">Arquivo (PDF ou imagem)</label>
             <input
               type="file"
-              accept=".pdf,image/*,video/*"
+              accept=".pdf,image/*"
               onChange={e => setFile(e.target.files?.[0] ?? null)}
               required
               className="w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-zinc-700 file:text-white file:text-xs hover:file:bg-zinc-600"
