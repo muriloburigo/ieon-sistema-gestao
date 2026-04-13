@@ -2,6 +2,14 @@ import Link from 'next/link'
 import { createClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+const NAV = [
+  { href: '/admin/dashboard',   label: 'Painel',              icon: '▦' },
+  { href: '/admin/assinaturas', label: 'Assinaturas',         icon: '⊟' },
+  { href: '/admin/alunos',      label: 'Alunos',              icon: '⊙' },
+  { href: '/admin/links',       label: 'Links de Pagamento',  icon: '⊕' },
+  { href: '/admin/documentos',  label: 'Documentos',          icon: '⊞' },
+]
+
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -9,52 +17,58 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: donor } = await supabase
     .from('donors')
-    .select('name, is_admin')
+    .select('name, email, is_admin')
     .eq('id', user.id)
     .single()
 
   if (!donor?.is_admin) redirect('/dashboard')
 
+  const initials = donor.name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase()
+
   return (
-    <div className="min-h-screen bg-black flex">
+    <div className="min-h-screen bg-zinc-950 flex">
       {/* Sidebar */}
-      <aside className="w-56 border-r border-zinc-900 flex flex-col">
-        <div className="p-6 border-b border-zinc-900">
-          <div className="flex gap-1 mb-3">
-            <div className="w-4 h-5 bg-orange rounded-sm" />
-            <div className="w-3 h-5 bg-blue rounded-sm" />
-          </div>
-          <p className="text-xs text-silver tracking-widest uppercase leading-tight">Instituto<br/>Endurance On</p>
+      <aside className="w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
+        {/* Logo */}
+        <div className="px-6 py-5 border-b border-zinc-800">
+          <span className="font-bold text-lg">
+            <span className="text-orange">Endurance</span>
+            <span className="text-blue"> On</span>
+          </span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
-          {[
-            { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
-            { href: '/admin/assinantes', label: 'Assinantes', icon: '👥' },
-            { href: '/admin/pagamentos', label: 'Pagamentos', icon: '💳' },
-            { href: '/admin/documentos', label: 'Documentos', icon: '📁' },
-          ].map(({ href, label, icon }) => (
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          {NAV.map(({ href, label, icon }) => (
             <Link
               key={href}
               href={href}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             >
-              <span>{icon}</span>
+              <span className="text-base w-5 text-center">{icon}</span>
               {label}
             </Link>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-zinc-900">
-          <p className="text-xs text-zinc-500 mb-2">{donor.name}</p>
+        {/* User */}
+        <div className="px-4 py-4 border-t border-zinc-800 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-orange flex items-center justify-center text-white text-xs font-bold shrink-0">
+            {initials}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium text-white truncate">{donor.name}</p>
+            <p className="text-xs text-zinc-500 truncate">{donor.email}</p>
+          </div>
           <form action="/api/auth/logout" method="POST">
-            <button className="text-xs text-zinc-600 hover:text-white transition-colors">Sair</button>
+            <button className="text-zinc-500 hover:text-white text-xs transition-colors shrink-0">→</button>
           </form>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div className="max-w-5xl mx-auto px-8 py-8">
+      {/* Main */}
+      <main className="flex-1 overflow-auto bg-zinc-950">
+        <div className="max-w-6xl mx-auto px-8 py-8">
           {children}
         </div>
       </main>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '~/lib/supabase/client'
 
 export default function LoginPage() {
@@ -89,7 +90,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-zinc-600 text-xs mt-8">
+        <p className="text-center text-zinc-500 text-xs mt-6">
+          Não tem conta?{' '}
+          <Link href="/cadastro" className="text-zinc-300 hover:text-white transition-colors">
+            Cadastre-se
+          </Link>
+        </p>
+
+        <p className="text-center text-zinc-700 text-xs mt-4">
           © {new Date().getFullYear()} Instituto Endurance On
         </p>
       </div>
