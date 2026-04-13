@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IEON — Instituto Endurance On",
-  description: "Sistema de gestão de doadores do Instituto Endurance On",
+  title: "IEON - Sistema de Gestão",
+  description: "Sistema de Gestão do Instituto Endurance On",
 };
 
 export default function RootLayout({
