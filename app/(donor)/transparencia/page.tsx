@@ -1,4 +1,4 @@
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import DownloadButton from './DownloadButton'
 
@@ -7,7 +7,8 @@ export default async function TransparenciaPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: documents } = await supabase
+  const db = createAdminClient()
+  const { data: documents } = await db
     .from('documents')
     .select('*')
     .order('created_at', { ascending: false })

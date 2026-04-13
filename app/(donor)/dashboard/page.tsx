@@ -1,4 +1,4 @@
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { PlanValue } from '~/lib/types'
 
@@ -9,7 +9,8 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: donor } = await supabase
+  const db = createAdminClient()
+  const { data: donor } = await db
     .from('donors')
     .select('*, subscriptions(*, payments(*))')
     .eq('id', user.id)

@@ -1,4 +1,4 @@
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function HistoricoPage() {
@@ -6,7 +6,8 @@ export default async function HistoricoPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: subscription } = await supabase
+  const db = createAdminClient()
+  const { data: subscription } = await db
     .from('subscriptions')
     .select('*, payments(*)')
     .eq('donor_id', user.id)
