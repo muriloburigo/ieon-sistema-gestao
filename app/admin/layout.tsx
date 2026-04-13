@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 const NAV = [
@@ -15,7 +15,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: donor } = await supabase
+  const adminClient = await createAdminClient()
+  const { data: donor } = await adminClient
     .from('donors')
     .select('name, email, is_admin')
     .eq('id', user.id)

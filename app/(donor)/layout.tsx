@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function DonorLayout({ children }: { children: React.ReactNode }) {
@@ -7,7 +7,8 @@ export default async function DonorLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: donor } = await supabase
+  const admin = await createAdminClient()
+  const { data: donor } = await admin
     .from('donors')
     .select('name, is_admin')
     .eq('id', user.id)
