@@ -1,4 +1,4 @@
-import { createClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import type { PlanValue } from '~/lib/types'
 
@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase.from('subscriptions').insert({
+  const db = createAdminClient()
+  await db.from('subscriptions').insert({
     donor_id: user.id,
     plan_value: planValue,
     joined_at: new Date().toISOString(),
