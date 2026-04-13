@@ -84,6 +84,12 @@ export default function LoginPage() {
             />
           </div>
 
+          <div className="text-right -mt-2">
+            <Link href="/esqueci-senha" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+              Esqueci minha senha
+            </Link>
+          </div>
+
           {SITE_KEY && !blocked && (
             <div className="flex justify-center">
               <Turnstile
