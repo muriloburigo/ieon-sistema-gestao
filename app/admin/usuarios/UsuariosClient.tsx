@@ -1,9 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { createUser, toggleAdmin, deleteUser } from './actions'
+import { createUser, toggleAdmin, toggleStatus, deleteUser } from './actions'
 
-export default function UsuariosClient({ users }: { users: any[] }) {
+interface Props {
+  users: any[]
+  currentUserId: string
+}
+
+export default function UsuariosClient({ users, currentUserId }: Props) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
@@ -20,10 +25,19 @@ export default function UsuariosClient({ users }: { users: any[] }) {
   }
 
   async function handleToggleAdmin(userId: string, current: boolean) {
-    const label = current ? 'Remover permissão de admin?' : 'Dar permissão de admin?'
-    if (!confirm(label)) return
+    if (!confirm(current ? 'Remover permissão de admin?' : 'Dar permissão de admin?')) return
     setActionId(userId)
     await toggleAdmin(userId, current, users.find(u => u.id === userId)?.name ?? userId)
+    setActionId(null)
+  }
+
+  async function handleToggleStatus(userId: string, currentStatus: string, name: string) {
+    const label = currentStatus === 'active'
+      ? `Inativar o usuário "${name}"?`
+      : `Reativar o usuário "${name}"?`
+    if (!confirm(label)) return
+    setActionId(userId)
+    await toggleStatus(userId, currentStatus, name)
     setActionId(null)
   }
 
@@ -39,7 +53,7 @@ export default function UsuariosClient({ users }: { users: any[] }) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Usuários</h1>
-          <p className="text-zinc-400 text-sm mt-1">Crie usuários e gerencie permissões de admin.</p>
+          <p className="text-zinc-400 text-sm mt-1">Crie usuários e gerencie permissões.</p>
         </div>
         <button
           onClick={() => setOpen(true)}
@@ -130,48 +144,75 @@ export default function UsuariosClient({ users }: { users: any[] }) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-zinc-800">
-              {['Nome', 'Email', 'Perfil', 'Cadastrado em', 'Ações'].map(h => (
+              {['Nome', 'Email', 'Perfil', 'Status', 'Cadastrado em', 'Ações'].map(h => (
                 <th key={h} className="text-left px-5 py-3 text-xs text-zinc-500 uppercase tracking-wider font-medium">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800/50">
-            {users.map((u: any) => (
-              <tr key={u.id} className="hover:bg-zinc-800/30 transition-colors">
-                <td className="px-5 py-4 text-sm font-medium text-white">{u.name}</td>
-                <td className="px-5 py-4 text-sm text-zinc-400">{u.email}</td>
-                <td className="px-5 py-4">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                    u.is_admin
-                      ? 'bg-orange/10 text-orange border-orange/20'
-                      : 'bg-zinc-700/50 text-zinc-400 border-zinc-600'
-                  }`}>
-                    {u.is_admin ? 'Admin' : 'Aluno'}
-                  </span>
-                </td>
-                <td className="px-5 py-4 text-sm text-zinc-400">
-                  {new Date(u.created_at).toLocaleDateString('pt-BR')}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleToggleAdmin(u.id, u.is_admin)}
-                      disabled={actionId === u.id}
-                      className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors disabled:opacity-50"
-                    >
-                      {u.is_admin ? 'Remover admin' : 'Tornar admin'}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(u.id, u.name, u.email)}
-                      disabled={actionId === u.id}
-                      className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                    >
-                      Excluir
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {users.map((u: any) => {
+              const isSelf = u.id === currentUserId
+              const isActive = u.status === 'active'
+              return (
+                <tr key={u.id} className={`hover:bg-zinc-800/30 transition-colors ${!isActive ? 'opacity-50' : ''}`}>
+                  <td className="px-5 py-4 text-sm font-medium text-white">{u.name}</td>
+                  <td className="px-5 py-4 text-sm text-zinc-400">{u.email}</td>
+                  <td className="px-5 py-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                      u.is_admin
+                        ? 'bg-orange/10 text-orange border-orange/20'
+                        : 'bg-zinc-700/50 text-zinc-400 border-zinc-600'
+                    }`}>
+                      {u.is_admin ? 'Admin' : 'Aluno'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
+                      isActive
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-zinc-700/50 text-zinc-500 border-zinc-600'
+                    }`}>
+                      {isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4 text-sm text-zinc-400">
+                    {new Date(u.created_at).toLocaleDateString('pt-BR')}
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        onClick={() => handleToggleAdmin(u.id, u.is_admin)}
+                        disabled={actionId === u.id || isSelf}
+                        title={isSelf ? 'Não é possível alterar seu próprio perfil' : ''}
+                        className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        {u.is_admin ? 'Remover admin' : 'Tornar admin'}
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(u.id, u.status, u.name)}
+                        disabled={actionId === u.id || isSelf}
+                        title={isSelf ? 'Não é possível inativar a si mesmo' : ''}
+                        className={`px-3 py-1 text-xs rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                          isActive
+                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20 hover:bg-yellow-500/20'
+                            : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
+                        }`}
+                      >
+                        {actionId === u.id ? '...' : isActive ? 'Inativar' : 'Reativar'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(u.id, u.name, u.email)}
+                        disabled={actionId === u.id || isSelf}
+                        title={isSelf ? 'Não é possível excluir a si mesmo' : ''}
+                        className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
         {users.length === 0 && (

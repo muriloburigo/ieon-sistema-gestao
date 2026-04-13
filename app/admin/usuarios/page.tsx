@@ -1,13 +1,15 @@
-import { createAdminClient } from '~/lib/supabase/server'
+import { createClient, createAdminClient } from '~/lib/supabase/server'
 import UsuariosClient from './UsuariosClient'
 
 export default async function UsuariosPage() {
-  const supabase = createAdminClient()
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: donors } = await supabase
+  const db = createAdminClient()
+  const { data: donors } = await db
     .from('donors')
-    .select('id, name, email, is_admin, created_at')
+    .select('id, name, email, is_admin, status, created_at')
     .order('created_at', { ascending: false })
 
-  return <UsuariosClient users={donors ?? []} />
+  return <UsuariosClient users={donors ?? []} currentUserId={user?.id ?? ''} />
 }

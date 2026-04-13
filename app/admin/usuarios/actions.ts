@@ -51,6 +51,23 @@ export async function toggleAdmin(userId: string, currentValue: boolean, userNam
   revalidatePath('/admin/usuarios')
 }
 
+export async function toggleStatus(userId: string, currentStatus: string, userName: string) {
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+  const supabase = createAdminClient()
+  await supabase.from('donors').update({ status: newStatus }).eq('id', userId)
+
+  await logAudit({
+    action: 'toggle_status',
+    entity: 'user',
+    entityId: userId,
+    entityLabel: userName,
+    before: { status: currentStatus === 'active' ? 'Ativo' : 'Inativo' },
+    after: { status: newStatus === 'active' ? 'Ativo' : 'Inativo' },
+  })
+
+  revalidatePath('/admin/usuarios')
+}
+
 export async function deleteUser(userId: string, userName: string, userEmail: string) {
   const supabase = createAdminClient()
   await supabase.auth.admin.deleteUser(userId)
