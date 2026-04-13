@@ -35,8 +35,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Sidebar */}
       <aside className="w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col shrink-0">
         {/* Logo */}
-        <div className="px-6 py-4 border-b border-zinc-800 flex items-center">
-          <Image src="/logo.png" alt="IEON" width={40} height={40} className="object-contain" />
+        <div className="py-5 border-b border-zinc-800 flex items-center justify-center">
+          <Image src="/logo.png" alt="IEON" width={56} height={56} className="object-contain" />
         </div>
 
         {/* Nav */}
