@@ -7,7 +7,9 @@ export interface Donor {
   name: string
   email: string
   whatsapp?: string
+  cpf?: string
   status: DonorStatus
+  asaas_customer_id?: string
   created_at: string
 }
 
@@ -16,6 +18,9 @@ export interface Subscription {
   donor_id: string
   plan_value: PlanValue
   joined_at: string
+  status: 'active' | 'cancelled'
+  asaas_subscription_id?: string
+  billing_type?: string
   donor?: Donor
 }
 
@@ -26,6 +31,8 @@ export interface Payment {
   status: PaymentStatus
   paid_at: string | null
   created_at: string
+  asaas_payment_id?: string
+  asaas_invoice_url?: string
   subscription?: Subscription & { donor?: Donor }
 }
 

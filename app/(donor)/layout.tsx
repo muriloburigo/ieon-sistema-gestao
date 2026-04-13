@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -20,12 +21,8 @@ export default async function DonorLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-black">
       {/* Top nav */}
       <header className="border-b border-zinc-900 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex gap-1">
-            <div className="w-4 h-5 bg-orange rounded-sm" />
-            <div className="w-3 h-5 bg-blue rounded-sm" />
-          </div>
-          <span className="text-xs text-silver tracking-widest uppercase">Instituto Endurance On</span>
+        <div className="flex items-center">
+          <Image src="/logo.png" alt="IEON" width={36} height={36} className="object-contain" />
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-zinc-400">{donor?.name}</span>
@@ -42,6 +39,7 @@ export default async function DonorLayout({ children }: { children: React.ReactN
             { href: '/dashboard', label: 'Início' },
             { href: '/historico', label: 'Histórico' },
             { href: '/transparencia', label: 'Prestação de Contas' },
+            { href: '/perfil', label: 'Perfil' },
           ].map(({ href, label }) => (
             <Link
               key={href}

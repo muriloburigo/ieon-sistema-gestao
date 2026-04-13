@@ -1,8 +1,7 @@
 import { createClient, createAdminClient } from '~/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import type { PlanValue } from '~/lib/types'
-
-const PLAN_VALUES: PlanValue[] = [5, 10, 15, 50, 100]
+import { isAsaasConfigured } from '~/lib/asaas'
+import PlanSelection from './PlanSelection'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -19,6 +18,8 @@ export default async function DashboardPage() {
   const subscription = donor?.subscriptions?.[0]
   const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
   const currentPayment = subscription?.payments?.find((p: any) => p.reference_month === currentMonth)
+
+  const asaasEnabled = isAsaasConfigured()
 
   return (
     <div className="space-y-8">
@@ -49,34 +50,28 @@ export default async function DashboardPage() {
               {currentPayment?.status === 'paid' ? '✓ Pago' : '⏳ Pendente'}
             </div>
           </div>
+
+          {currentPayment?.asaas_invoice_url && currentPayment.status !== 'paid' && (
+            <a
+              href={currentPayment.asaas_invoice_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-sm text-orange hover:text-orange/80 transition-colors"
+            >
+              Ver fatura / Pagar agora →
+            </a>
+          )}
+
           <p className="text-xs text-zinc-500">
-            Membro desde {new Date(subscription.joined_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+            Membro desde{' '}
+            {new Date(subscription.joined_at).toLocaleDateString('pt-BR', {
+              month: 'long',
+              year: 'numeric',
+            })}
           </p>
         </div>
       ) : (
-        /* Plan selection */
-        <div className="space-y-4">
-          <div>
-            <h2 className="text-lg font-semibold text-white">Escolha seu plano</h2>
-            <p className="text-zinc-400 text-sm mt-1">Selecione o valor da sua contribuição mensal.</p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {PLAN_VALUES.map(value => (
-              <form key={value} action="/api/donor/subscribe" method="POST">
-                <input type="hidden" name="plan_value" value={value} />
-                <button
-                  type="submit"
-                  className="w-full bg-zinc-900 border border-zinc-800 hover:border-orange rounded-xl p-4 text-center transition-colors group"
-                >
-                  <p className="text-xl font-bold text-white group-hover:text-orange transition-colors">
-                    R$ {value}
-                  </p>
-                  <p className="text-xs text-zinc-500 mt-1">/mês</p>
-                </button>
-              </form>
-            ))}
-          </div>
-        </div>
+        <PlanSelection hasCpf={Boolean(donor?.cpf)} asaasEnabled={asaasEnabled} />
       )}
 
       {/* Impact message */}
