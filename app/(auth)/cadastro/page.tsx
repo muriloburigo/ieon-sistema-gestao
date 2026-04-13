@@ -1,9 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
+import Turnstile from 'react-turnstile'
 import { createClient } from '~/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import PasswordStrength, { validatePassword } from '../PasswordStrength'
+
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? ''
 
 export default function CadastroPage() {
   const router = useRouter()
@@ -11,25 +15,35 @@ export default function CadastroPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const turnstileRef = useRef<any>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    const pwdError = validatePassword(password)
+    if (pwdError) { setError(`Senha fraca: ${pwdError}.`); return }
     if (password !== confirm) { setError('As senhas não coincidem.'); return }
-    if (password.length < 6) { setError('A senha deve ter pelo menos 6 caracteres.'); return }
+    if (SITE_KEY && !captchaToken) { setError('Complete a verificação de segurança.'); return }
 
     setLoading(true)
     const supabase = createClient()
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        ...(captchaToken ? { captchaToken } : {}),
+      },
     })
 
     if (signUpError) {
       setError(signUpError.message)
+      turnstileRef.current?.reset()
+      setCaptchaToken(null)
       setLoading(false)
       return
     }
@@ -38,7 +52,7 @@ export default function CadastroPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black px-4">
+    <div className="min-h-screen flex items-center justify-center bg-black px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-4">
@@ -61,6 +75,7 @@ export default function CadastroPage() {
               placeholder="Seu nome"
             />
           </div>
+
           <div>
             <label className="block text-xs text-silver mb-1.5 tracking-wider uppercase">Email</label>
             <input
@@ -72,6 +87,7 @@ export default function CadastroPage() {
               placeholder="seu@email.com"
             />
           </div>
+
           <div>
             <label className="block text-xs text-silver mb-1.5 tracking-wider uppercase">Senha</label>
             <input
@@ -80,9 +96,11 @@ export default function CadastroPage() {
               onChange={e => setPassword(e.target.value)}
               required
               className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-orange transition-colors"
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
             />
+            <PasswordStrength password={password} />
           </div>
+
           <div>
             <label className="block text-xs text-silver mb-1.5 tracking-wider uppercase">Confirmar senha</label>
             <input
@@ -93,7 +111,22 @@ export default function CadastroPage() {
               className="w-full bg-zinc-900 border border-zinc-800 text-white rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-orange transition-colors"
               placeholder="••••••••"
             />
+            {confirm && confirm !== password && (
+              <p className="text-xs text-red-400 mt-1">As senhas não coincidem.</p>
+            )}
           </div>
+
+          {SITE_KEY && (
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                sitekey={SITE_KEY}
+                theme="dark"
+                onVerify={token => setCaptchaToken(token)}
+                onExpire={() => setCaptchaToken(null)}
+              />
+            </div>
+          )}
 
           {error && <p className="text-red-400 text-sm">{error}</p>}
 
@@ -112,7 +145,6 @@ export default function CadastroPage() {
             Entrar
           </Link>
         </p>
-
         <p className="text-center text-zinc-700 text-xs mt-4">
           © {new Date().getFullYear()} Instituto Endurance On
         </p>
