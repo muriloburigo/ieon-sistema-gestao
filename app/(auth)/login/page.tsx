@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import Turnstile from 'react-turnstile'
 import { loginAction } from './actions'
@@ -12,11 +12,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [attempts, setAttempts] = useState(0)
   const [blocked, setBlocked] = useState(false)
-  const turnstileRef = useRef<any>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -40,7 +40,7 @@ export default function LoginPage() {
       } else {
         setError(`${err} (${next}/${MAX_ATTEMPTS} tentativas)`)
       }
-      turnstileRef.current?.reset()
+      setCaptchaKey(k => k + 1)
       setCaptchaToken(null)
       setLoading(false)
     }
@@ -87,7 +87,7 @@ export default function LoginPage() {
           {SITE_KEY && !blocked && (
             <div className="flex justify-center">
               <Turnstile
-                ref={turnstileRef}
+                key={captchaKey}
                 sitekey={SITE_KEY}
                 theme="dark"
                 onVerify={token => setCaptchaToken(token)}

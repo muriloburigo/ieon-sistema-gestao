@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import Turnstile from 'react-turnstile'
 import { createClient } from '~/lib/supabase/client'
@@ -16,9 +16,9 @@ export default function CadastroPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const turnstileRef = useRef<any>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -42,7 +42,7 @@ export default function CadastroPage() {
 
     if (signUpError) {
       setError(signUpError.message)
-      turnstileRef.current?.reset()
+      setCaptchaKey(k => k + 1)
       setCaptchaToken(null)
       setLoading(false)
       return
@@ -119,7 +119,7 @@ export default function CadastroPage() {
           {SITE_KEY && (
             <div className="flex justify-center">
               <Turnstile
-                ref={turnstileRef}
+                key={captchaKey}
                 sitekey={SITE_KEY}
                 theme="dark"
                 onVerify={token => setCaptchaToken(token)}
