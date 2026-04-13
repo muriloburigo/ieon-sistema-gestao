@@ -1,8 +1,8 @@
-import { createClient } from '~/lib/supabase/server'
+import { createAdminClient } from '~/lib/supabase/server'
 import AssinaturasClient from './AssinaturasClient'
 
 export default async function AssinaturasPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: subscriptions } = await supabase
     .from('subscriptions')

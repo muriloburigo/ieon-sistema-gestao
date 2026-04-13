@@ -1,31 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '~/lib/supabase/client'
-import { useRouter } from 'next/navigation'
-
-function getStoragePath(fileUrl: string): string {
-  // URL format: .../storage/v1/object/public/documents/<path>
-  const marker = '/object/public/documents/'
-  const idx = fileUrl.indexOf(marker)
-  return idx !== -1 ? fileUrl.slice(idx + marker.length) : ''
-}
+import { deleteDocument } from './actions'
 
 export default function DocumentosClient({ documents }: { documents: any[] }) {
-  const router = useRouter()
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(doc: any) {
     if (!confirm(`Excluir "${doc.title}"?`)) return
     setDeleting(doc.id)
-    const supabase = createClient()
-
-    const path = getStoragePath(doc.file_url)
-    if (path) await supabase.storage.from('documents').remove([path])
-    await supabase.from('documents').delete().eq('id', doc.id)
-
+    await deleteDocument(doc.id, doc.file_url)
     setDeleting(null)
-    router.refresh()
   }
 
   if (documents.length === 0) {

@@ -1,8 +1,8 @@
-import { createClient } from '~/lib/supabase/server'
+import { createAdminClient } from '~/lib/supabase/server'
 import AlunosClient from './AlunosClient'
 
 export default async function AlunosPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: donors } = await supabase
     .from('donors')

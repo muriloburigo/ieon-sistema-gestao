@@ -1,4 +1,4 @@
-import { createClient } from '~/lib/supabase/server'
+import { createAdminClient } from '~/lib/supabase/server'
 import Link from 'next/link'
 
 function daysLate(joinedAt: string, referenceMonth: string): number {
@@ -9,7 +9,7 @@ function daysLate(joinedAt: string, referenceMonth: string): number {
 }
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const currentMonth = new Date().toISOString().slice(0, 7)
 
   const { data: subscriptions } = await supabase

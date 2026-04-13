@@ -1,54 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import { createClient } from '~/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { useState, useRef } from 'react'
+import { uploadDocument } from './actions'
 
 export default function DocumentUpload() {
-  const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
-  const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const formRef = useRef<HTMLFormElement>(null)
 
-  async function handleUpload(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (!file || !title) return
     setLoading(true)
     setError('')
-
-    const supabase = createClient()
-
-    // Upload file to storage
-    const ext = file.name.split('.').pop()
-    const path = `documents/${Date.now()}.${ext}`
-    const { error: uploadError } = await supabase.storage.from('documents').upload(path, file)
-
-    if (uploadError) {
-      setError('Erro ao fazer upload do arquivo.')
+    const result = await uploadDocument(new FormData(e.currentTarget))
+    if (result.error) {
+      setError(result.error)
       setLoading(false)
-      return
+    } else {
+      formRef.current?.reset()
+      setOpen(false)
+      setLoading(false)
     }
-
-    const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(path)
-
-    const fileType = file.type.includes('pdf') ? 'pdf' : 'image'
-
-    await supabase.from('documents').insert({
-      title,
-      description: description || null,
-      file_url: publicUrl,
-      file_type: fileType,
-    })
-
-    setTitle('')
-    setDescription('')
-    setFile(null)
-    setOpen(false)
-    setLoading(false)
-    router.refresh()
   }
 
   return (
@@ -62,7 +35,8 @@ export default function DocumentUpload() {
         </button>
       ) : (
         <form
-          onSubmit={handleUpload}
+          ref={formRef}
+          onSubmit={handleSubmit}
           className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4"
         >
           <h3 className="font-semibold text-white">Novo documento</h3>
@@ -70,9 +44,8 @@ export default function DocumentUpload() {
           <div>
             <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wider">Título</label>
             <input
+              name="title"
               type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
               required
               className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange"
               placeholder="Ex: Relatório Abril 2026"
@@ -82,8 +55,7 @@ export default function DocumentUpload() {
           <div>
             <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wider">Descrição (opcional)</label>
             <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
+              name="description"
               rows={2}
               className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-orange resize-none"
             />
@@ -92,9 +64,9 @@ export default function DocumentUpload() {
           <div>
             <label className="block text-xs text-zinc-400 mb-1.5 uppercase tracking-wider">Arquivo (PDF ou imagem)</label>
             <input
+              name="file"
               type="file"
               accept=".pdf,image/*"
-              onChange={e => setFile(e.target.files?.[0] ?? null)}
               required
               className="w-full text-sm text-zinc-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-zinc-700 file:text-white file:text-xs hover:file:bg-zinc-600"
             />
