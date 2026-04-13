@@ -7,7 +7,7 @@ export default async function DonorLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const admin = await createAdminClient()
+  const admin = createAdminClient()
   const { data: donor } = await admin
     .from('donors')
     .select('name, is_admin')

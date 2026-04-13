@@ -9,12 +9,16 @@ export async function loginAction(email: string, password: string): Promise<stri
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
   if (error || !data.user) return 'Email ou senha incorretos.'
 
-  const adminClient = await createAdminClient()
-  const { data: donor } = await adminClient
+  const adminClient = createAdminClient()
+  const { data: donor, error: donorError } = await adminClient
     .from('donors')
     .select('is_admin')
     .eq('id', data.user.id)
     .single()
+
+  console.log('[LOGIN] user.id:', data.user.id)
+  console.log('[LOGIN] donor:', donor)
+  console.log('[LOGIN] donorError:', donorError)
 
   redirect(donor?.is_admin ? '/admin/dashboard' : '/dashboard')
 }
