@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '~/lib/supabase/client'
+import { loginAction } from './actions'
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -16,28 +14,8 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
-
-    const supabase = createClient()
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (authError) {
-      setError('Email ou senha incorretos.')
-      setLoading(false)
-      return
-    }
-
-    // Check if admin
-    const { data: profile } = await supabase
-      .from('donors')
-      .select('is_admin')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.is_admin) {
-      router.push('/admin/dashboard')
-    } else {
-      router.push('/dashboard')
-    }
+    const err = await loginAction(email, password)
+    if (err) { setError(err); setLoading(false) }
   }
 
   return (
