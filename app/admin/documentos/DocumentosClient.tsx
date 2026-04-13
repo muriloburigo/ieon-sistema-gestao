@@ -9,7 +9,7 @@ export default function DocumentosClient({ documents }: { documents: any[] }) {
   async function handleDelete(doc: any) {
     if (!confirm(`Excluir "${doc.title}"?`)) return
     setDeleting(doc.id)
-    await deleteDocument(doc.id, doc.file_url)
+    await deleteDocument(doc.id, doc.file_url, doc.title)
     setDeleting(null)
   }
 

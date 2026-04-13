@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '~/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { editSubscriptionPlan, cancelSubscription } from './actions'
 
 type SubStatus = 'active' | 'overdue' | 'defaulted' | 'cancelled'
 
@@ -33,7 +32,6 @@ const STATUS_STYLE: Record<SubStatus, string> = {
 const FILTERS = ['Todas', 'Ativas', 'Pendentes', 'Inadimplentes', 'Canceladas', 'Atrasadas'] as const
 
 export default function AssinaturasClient({ subscriptions }: { subscriptions: any[] }) {
-  const router = useRouter()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<typeof FILTERS[number]>('Todas')
   const [editId, setEditId] = useState<string | null>(null)
@@ -58,25 +56,16 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
     return matchSearch && matchFilter
   })
 
-  async function handleEdit(sub: any) {
-    setEditId(sub.id)
-    setEditPlan(sub.plan_value)
-  }
-
-  async function saveEdit(subId: string) {
+  async function saveEdit(sub: any) {
     setSaving(true)
-    const supabase = createClient()
-    await supabase.from('subscriptions').update({ plan_value: editPlan }).eq('id', subId)
+    await editSubscriptionPlan(sub.id, sub.donors?.name ?? sub.id, sub.plan_value, editPlan)
     setSaving(false)
     setEditId(null)
-    router.refresh()
   }
 
-  async function cancelSubscription(subId: string) {
+  async function handleCancel(sub: any) {
     if (!confirm('Cancelar esta assinatura?')) return
-    const supabase = createClient()
-    await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('id', subId)
-    router.refresh()
+    await cancelSubscription(sub.id, sub.donors?.name ?? sub.id)
   }
 
   function exportCSV() {
@@ -93,7 +82,6 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
 
   return (
     <div className="space-y-6">
-      {/* Search + Filters */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-60 relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
@@ -107,26 +95,18 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
         </div>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
+            <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filter === f ? 'bg-orange text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700'
-              }`}
-            >
-              {f}
-            </button>
+              }`}>{f}</button>
           ))}
-          <button
-            onClick={exportCSV}
-            className="px-3 py-1.5 bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 rounded-lg text-xs flex items-center gap-1 transition-colors"
-          >
+          <button onClick={exportCSV}
+            className="px-3 py-1.5 bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 rounded-lg text-xs flex items-center gap-1 transition-colors">
             ↓ Exportar
           </button>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-zinc-800">
           <p className="text-sm text-zinc-400">{filtered.length} resultado{filtered.length !== 1 ? 's' : ''}</p>
@@ -146,11 +126,8 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
                 <td className="px-5 py-4 text-sm text-zinc-400">{s.donors?.email}</td>
                 <td className="px-5 py-4">
                   {editId === s.id ? (
-                    <select
-                      value={editPlan}
-                      onChange={e => setEditPlan(Number(e.target.value))}
-                      className="bg-zinc-800 border border-orange text-white rounded px-2 py-1 text-sm"
-                    >
+                    <select value={editPlan} onChange={e => setEditPlan(Number(e.target.value))}
+                      className="bg-zinc-800 border border-orange text-white rounded px-2 py-1 text-sm">
                       {[5, 10, 15, 50, 100].map(v => (
                         <option key={v} value={v}>R$ {v},00</option>
                       ))}
@@ -162,14 +139,9 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
                   )}
                 </td>
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[s._status as SubStatus]}`}>
-                      {s._status === 'active' && '✓ '}{STATUS_LABEL[s._status as SubStatus]}
-                    </span>
-                    {s._status === 'overdue' && (
-                      <span className="px-2 py-0.5 bg-red-500/10 text-red-400 rounded text-xs">Atrasado</span>
-                    )}
-                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_STYLE[s._status as SubStatus]}`}>
+                    {s._status === 'active' && '✓ '}{STATUS_LABEL[s._status as SubStatus]}
+                  </span>
                 </td>
                 <td className="px-5 py-4 text-sm text-zinc-400">
                   {new Date(s.joined_at).toLocaleDateString('pt-BR')}
@@ -177,27 +149,26 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
                 <td className="px-5 py-4">
                   {editId === s.id ? (
                     <div className="flex gap-2">
-                      <button
-                        onClick={() => saveEdit(s.id)}
-                        disabled={saving}
-                        className="px-3 py-1 bg-orange text-white text-xs rounded-lg hover:bg-orange/90 disabled:opacity-50"
-                      >
+                      <button onClick={() => saveEdit(s)} disabled={saving}
+                        className="px-3 py-1 bg-orange text-white text-xs rounded-lg hover:bg-orange/90 disabled:opacity-50">
                         {saving ? '...' : 'Salvar'}
                       </button>
-                      <button
-                        onClick={() => setEditId(null)}
-                        className="px-3 py-1 bg-zinc-700 text-zinc-300 text-xs rounded-lg hover:bg-zinc-600"
-                      >
-                        ✕
-                      </button>
+                      <button onClick={() => setEditId(null)}
+                        className="px-3 py-1 bg-zinc-700 text-zinc-300 text-xs rounded-lg hover:bg-zinc-600">✕</button>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handleEdit(s)}
-                      className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors"
-                    >
-                      Editar
-                    </button>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setEditId(s.id); setEditPlan(s.plan_value) }}
+                        className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors">
+                        Editar
+                      </button>
+                      {s._status !== 'cancelled' && (
+                        <button onClick={() => handleCancel(s)}
+                          className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors">
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
                   )}
                 </td>
               </tr>

@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '~/lib/supabase/server'
+import { logAudit } from '~/lib/audit'
 import { revalidatePath } from 'next/cache'
 
 export async function createUser(formData: FormData) {
@@ -12,12 +13,8 @@ export async function createUser(formData: FormData) {
   if (!name || !email || !password) return { error: 'Preencha todos os campos.' }
 
   const supabase = createAdminClient()
-
   const { data, error } = await supabase.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-    user_metadata: { name },
+    email, password, email_confirm: true, user_metadata: { name },
   })
 
   if (error) return { error: error.message }
@@ -26,18 +23,45 @@ export async function createUser(formData: FormData) {
     await supabase.from('donors').update({ is_admin: true }).eq('id', data.user.id)
   }
 
+  await logAudit({
+    action: 'create_user',
+    entity: 'user',
+    entityId: data.user?.id,
+    entityLabel: name,
+    after: { nome: name, email, admin: isAdmin ? 'Sim' : 'Não' },
+  })
+
   revalidatePath('/admin/usuarios')
   return { error: null }
 }
 
-export async function toggleAdmin(userId: string, currentValue: boolean) {
+export async function toggleAdmin(userId: string, currentValue: boolean, userName: string) {
   const supabase = createAdminClient()
   await supabase.from('donors').update({ is_admin: !currentValue }).eq('id', userId)
+
+  await logAudit({
+    action: 'toggle_admin',
+    entity: 'user',
+    entityId: userId,
+    entityLabel: userName,
+    before: { admin: currentValue ? 'Sim' : 'Não' },
+    after: { admin: !currentValue ? 'Sim' : 'Não' },
+  })
+
   revalidatePath('/admin/usuarios')
 }
 
-export async function deleteUser(userId: string) {
+export async function deleteUser(userId: string, userName: string, userEmail: string) {
   const supabase = createAdminClient()
   await supabase.auth.admin.deleteUser(userId)
+
+  await logAudit({
+    action: 'delete_user',
+    entity: 'user',
+    entityId: userId,
+    entityLabel: userName,
+    before: { nome: userName, email: userEmail },
+  })
+
   revalidatePath('/admin/usuarios')
 }

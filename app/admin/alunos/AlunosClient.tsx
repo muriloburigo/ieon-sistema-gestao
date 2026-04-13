@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '~/lib/supabase/client'
-import { useRouter } from 'next/navigation'
+import { toggleDonorStatus } from './actions'
 
 const FILTERS = ['Todos', 'Ativos', 'Inadimplentes', 'Cancelados'] as const
 
 export default function AlunosClient({ donors }: { donors: any[] }) {
-  const router = useRouter()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<typeof FILTERS[number]>('Todos')
+  const [actionId, setActionId] = useState<string | null>(null)
 
   const filtered = donors.filter(d => {
     const q = search.toLowerCase()
@@ -23,24 +22,21 @@ export default function AlunosClient({ donors }: { donors: any[] }) {
     return matchSearch && matchFilter
   })
 
-  async function toggleStatus(donorId: string, current: string) {
-    const next = current === 'active' ? 'inactive' : 'active'
-    if (!confirm(`Alterar status para "${next === 'active' ? 'Ativo' : 'Inadimplente'}"?`)) return
-    const supabase = createClient()
-    await supabase.from('donors').update({ status: next }).eq('id', donorId)
-    router.refresh()
+  async function handleToggle(donor: any) {
+    const next = donor.status === 'active' ? 'Inadimplente' : 'Ativo'
+    if (!confirm(`Alterar status para "${next}"?`)) return
+    setActionId(donor.id)
+    await toggleDonorStatus(donor.id, donor.status, donor.name)
+    setActionId(null)
   }
 
   function exportCSV() {
     const rows = [['Nome', 'Email', 'Status', 'Plano Ativo', 'Cadastrado em']]
     filtered.forEach(d => {
       const activeSub = d.subscriptions?.find((s: any) => s.status === 'active')
-      rows.push([
-        d.name, d.email,
-        d.status === 'active' ? 'Ativo' : 'Inadimplente',
+      rows.push([d.name, d.email, d.status === 'active' ? 'Ativo' : 'Inadimplente',
         activeSub ? `R$ ${activeSub.plan_value}` : '—',
-        new Date(d.created_at).toLocaleDateString('pt-BR'),
-      ])
+        new Date(d.created_at).toLocaleDateString('pt-BR')])
     })
     const csv = rows.map(r => r.join(',')).join('\n')
     const a = document.createElement('a'); a.href = 'data:text/csv,' + encodeURIComponent(csv)
@@ -54,40 +50,27 @@ export default function AlunosClient({ donors }: { donors: any[] }) {
         <p className="text-zinc-400 text-sm mt-1">Todos os alunos cadastrados na plataforma</p>
       </div>
 
-      {/* Search + Filters */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-wrap items-center gap-3">
         <div className="flex-1 min-w-60 relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-sm">🔍</span>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por nome ou email..."
-            className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange"
-          />
+            className="w-full bg-zinc-800 border border-zinc-700 text-white rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:border-orange" />
         </div>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
+            <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 filter === f ? 'bg-orange text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700'
-              }`}
-            >
-              {f}
-            </button>
+              }`}>{f}</button>
           ))}
-          <button
-            onClick={exportCSV}
-            className="px-3 py-1.5 bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 rounded-lg text-xs flex items-center gap-1 transition-colors"
-          >
+          <button onClick={exportCSV}
+            className="px-3 py-1.5 bg-zinc-800 text-zinc-400 hover:text-white border border-zinc-700 rounded-lg text-xs transition-colors">
             ↓ Exportar
           </button>
         </div>
       </div>
 
-      {/* Table */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="px-5 py-3 border-b border-zinc-800">
           <p className="text-sm text-zinc-400">{filtered.length} aluno{filtered.length !== 1 ? 's' : ''}</p>
@@ -109,32 +92,21 @@ export default function AlunosClient({ donors }: { donors: any[] }) {
                   <td className="px-5 py-4 text-sm text-zinc-400">{d.email}</td>
                   <td className="px-5 py-4">
                     <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${
-                      d.status === 'active'
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-orange/10 text-orange border-orange/20'
-                    }`}>
-                      {d.status === 'active' ? '✓ Ativo' : 'Inadimplente'}
-                    </span>
+                      d.status === 'active' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-orange/10 text-orange border-orange/20'
+                    }`}>{d.status === 'active' ? '✓ Ativo' : 'Inadimplente'}</span>
                   </td>
                   <td className="px-5 py-4 text-sm text-white">
-                    {activeSub
-                      ? <span className="font-semibold">R$ {activeSub.plan_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                      : <span className="text-zinc-600">—</span>
-                    }
+                    {activeSub ? <span className="font-semibold">R$ {activeSub.plan_value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> : <span className="text-zinc-600">—</span>}
                   </td>
-                  <td className="px-5 py-4 text-sm text-zinc-400">
-                    {new Date(d.created_at).toLocaleDateString('pt-BR')}
-                  </td>
+                  <td className="px-5 py-4 text-sm text-zinc-400">{new Date(d.created_at).toLocaleDateString('pt-BR')}</td>
                   <td className="px-5 py-4">
-                    <button
-                      onClick={() => toggleStatus(d.id, d.status)}
-                      className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
+                    <button onClick={() => handleToggle(d)} disabled={actionId === d.id}
+                      className={`px-3 py-1 text-xs rounded-lg border transition-colors disabled:opacity-50 ${
                         d.status === 'active'
                           ? 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
                           : 'bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20'
-                      }`}
-                    >
-                      {d.status === 'active' ? 'Marcar Inadimplente' : 'Reativar'}
+                      }`}>
+                      {actionId === d.id ? '...' : d.status === 'active' ? 'Marcar Inadimplente' : 'Reativar'}
                     </button>
                   </td>
                 </tr>
@@ -142,9 +114,7 @@ export default function AlunosClient({ donors }: { donors: any[] }) {
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && (
-          <div className="py-12 text-center text-zinc-600 text-sm">Nenhum aluno encontrado.</div>
-        )}
+        {filtered.length === 0 && <div className="py-12 text-center text-zinc-600 text-sm">Nenhum aluno encontrado.</div>}
       </div>
     </div>
   )

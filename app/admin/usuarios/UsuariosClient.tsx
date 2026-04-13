@@ -23,14 +23,14 @@ export default function UsuariosClient({ users }: { users: any[] }) {
     const label = current ? 'Remover permissão de admin?' : 'Dar permissão de admin?'
     if (!confirm(label)) return
     setActionId(userId)
-    await toggleAdmin(userId, current)
+    await toggleAdmin(userId, current, users.find(u => u.id === userId)?.name ?? userId)
     setActionId(null)
   }
 
-  async function handleDelete(userId: string, name: string) {
+  async function handleDelete(userId: string, name: string, email: string) {
     if (!confirm(`Excluir usuário "${name}"? Esta ação não pode ser desfeita.`)) return
     setActionId(userId)
-    await deleteUser(userId)
+    await deleteUser(userId, name, email)
     setActionId(null)
   }
 
@@ -162,7 +162,7 @@ export default function UsuariosClient({ users }: { users: any[] }) {
                       {u.is_admin ? 'Remover admin' : 'Tornar admin'}
                     </button>
                     <button
-                      onClick={() => handleDelete(u.id, u.name)}
+                      onClick={() => handleDelete(u.id, u.name, u.email)}
                       disabled={actionId === u.id}
                       className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors disabled:opacity-50"
                     >
