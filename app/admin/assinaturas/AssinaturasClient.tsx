@@ -3,11 +3,11 @@
 import { useState } from 'react'
 import { editSubscriptionPlan, cancelSubscription } from './actions'
 
-type SubStatus = 'active' | 'overdue' | 'defaulted' | 'cancelled'
+type SubStatus = 'active' | 'overdue' | 'user_inactive' | 'cancelled'
 
 function getStatus(sub: any): SubStatus {
   if (sub.status === 'cancelled') return 'cancelled'
-  if (sub.donors?.status === 'inactive') return 'defaulted'
+  if (sub.donors?.status === 'inactive') return 'user_inactive'
   const currentMonth = new Date().toISOString().slice(0, 7)
   const payment = sub.payments?.find((p: any) => p.reference_month === currentMonth)
   if (payment?.status === 'pending') {
@@ -20,16 +20,19 @@ function getStatus(sub: any): SubStatus {
 }
 
 const STATUS_LABEL: Record<SubStatus, string> = {
-  active: 'Ativa', overdue: 'Atrasado', defaulted: 'Inadimplente', cancelled: 'Cancelada',
+  active:        'Ativa',
+  overdue:       'Atrasado',
+  user_inactive: 'Inativo',
+  cancelled:     'Cancelada',
 }
 const STATUS_STYLE: Record<SubStatus, string> = {
-  active:    'bg-green-500/10 text-green-400 border-green-500/20',
-  overdue:   'bg-red-500/10 text-red-400 border-red-500/20',
-  defaulted: 'bg-orange/10 text-orange border-orange/20',
-  cancelled: 'bg-zinc-700/50 text-zinc-400 border-zinc-600',
+  active:        'bg-green-500/10 text-green-400 border-green-500/20',
+  overdue:       'bg-red-500/10 text-red-400 border-red-500/20',
+  user_inactive: 'bg-zinc-700/50 text-zinc-400 border-zinc-600',
+  cancelled:     'bg-zinc-700/30 text-zinc-500 border-zinc-700',
 }
 
-const FILTERS = ['Todas', 'Ativas', 'Pendentes', 'Inadimplentes', 'Canceladas', 'Atrasadas'] as const
+const FILTERS = ['Todas', 'Ativas', 'Pendentes', 'Inativos', 'Canceladas', 'Atrasadas'] as const
 
 export default function AssinaturasClient({ subscriptions }: { subscriptions: any[] }) {
   const [search, setSearch] = useState('')
@@ -50,7 +53,7 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
         const cur = new Date().toISOString().slice(0, 7)
         return s.payments?.some((p: any) => p.reference_month === cur && p.status === 'pending')
       })() :
-      filter === 'Inadimplentes' ? s._status === 'defaulted' :
+      filter === 'Inativos' ? s._status === 'user_inactive' :
       filter === 'Canceladas' ? s._status === 'cancelled' :
       filter === 'Atrasadas' ? s._status === 'overdue' : true
     return matchSearch && matchFilter

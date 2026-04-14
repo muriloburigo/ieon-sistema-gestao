@@ -19,7 +19,7 @@ export default async function AdminDashboardPage() {
     .eq('donors.is_admin', false)
 
   const active = subscriptions?.filter((s: any) => s.donors?.status === 'active') ?? []
-  const defaulted = subscriptions?.filter((s: any) => s.donors?.status === 'inactive') ?? []
+  const inactive = subscriptions?.filter((s: any) => s.donors?.status === 'inactive') ?? []
 
   const overdue = active.filter((s: any) => {
     const payment = s.payments?.find((p: any) => p.reference_month === currentMonth)
@@ -31,7 +31,7 @@ export default async function AdminDashboardPage() {
 
   const kpis = [
     { label: 'Assinantes Ativos',  value: active.length,    icon: '👥', bg: 'bg-blue/10 text-blue' },
-    { label: 'Inadimplentes',       value: defaulted.length, icon: '⚠',  bg: 'bg-red-500/10 text-red-400' },
+    { label: 'Contas Inativas',      value: inactive.length,  icon: '⊘',  bg: 'bg-zinc-700/50 text-zinc-400' },
     { label: 'Atrasados',           value: overdue.length,   icon: '⏱',  bg: 'bg-orange/10 text-orange' },
     { label: 'Receita Mensal',
       value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
