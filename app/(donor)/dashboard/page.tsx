@@ -15,7 +15,9 @@ export default async function DashboardPage() {
     .eq('id', user.id)
     .single()
 
-  const subscription = donor?.subscriptions?.[0]
+  // PostgREST returns subscriptions as object (not array) due to UNIQUE(donor_id)
+  const rawSub = donor?.subscriptions
+  const subscription = rawSub ? (Array.isArray(rawSub) ? rawSub[0] : rawSub) : null
   const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
   const currentPayment = subscription?.payments?.find((p: any) => p.reference_month === currentMonth)
 

@@ -31,7 +31,8 @@ export default async function AssinantesPage() {
           </thead>
           <tbody>
             {donors?.map((donor: any) => {
-              const sub = donor.subscriptions?.[0]
+              const rawSub = donor.subscriptions
+              const sub = rawSub ? (Array.isArray(rawSub) ? rawSub[0] : rawSub) : null
               return (
                 <tr key={donor.id} className="border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
                   <td className="px-5 py-4">

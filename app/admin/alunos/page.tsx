@@ -10,5 +10,12 @@ export default async function AlunosPage() {
     .eq('is_admin', false)
     .order('created_at', { ascending: false })
 
-  return <AlunosClient donors={donors ?? []} />
+  // PostgREST returns subscriptions as a single object (not array) due to UNIQUE(donor_id).
+  // Normalize to always be an array before passing to the client component.
+  const normalized = (donors ?? []).map(d => ({
+    ...d,
+    subscriptions: !d.subscriptions ? [] : Array.isArray(d.subscriptions) ? d.subscriptions : [d.subscriptions],
+  }))
+
+  return <AlunosClient donors={normalized} />
 }
