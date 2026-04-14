@@ -35,14 +35,15 @@ export async function POST(request: NextRequest) {
     // Try to find by asaas_payment_id (already synced)
     const { data: existing } = await db
       .from('payments')
-      .select('id')
+      .select('id, subscription_id')
       .eq('asaas_payment_id', payment.id)
       .maybeSingle()
 
     if (existing) {
       await db.from('payments').update({ status: 'paid', paid_at: paidAt }).eq('id', existing.id)
+      // Activate subscription on first confirmed payment
+      await db.from('subscriptions').update({ status: 'active' }).eq('id', existing.subscription_id).eq('status', 'pending')
     } else if (payment.subscription) {
-      // Find our subscription and upsert the payment record
       const { data: sub } = await db
         .from('subscriptions')
         .select('id')
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle()
 
       if (sub) {
-        const refMonth = payment.dueDate.slice(0, 7) // YYYY-MM
+        const refMonth = payment.dueDate.slice(0, 7)
         await db.from('payments').upsert(
           {
             subscription_id: sub.id,
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest) {
           },
           { onConflict: 'subscription_id,reference_month' }
         )
+        // Activate subscription on first confirmed payment
+        await db.from('subscriptions').update({ status: 'active' }).eq('id', sub.id).eq('status', 'pending')
       }
     }
   }

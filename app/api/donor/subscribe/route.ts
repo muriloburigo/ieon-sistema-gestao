@@ -19,6 +19,7 @@ export async function POST(request: Request) {
     donor_id: user.id,
     plan_value: planValue,
     joined_at: new Date().toISOString(),
+    status: 'pending',
   })
 
   redirect('/dashboard')

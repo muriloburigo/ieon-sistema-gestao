@@ -18,7 +18,7 @@ export interface Subscription {
   donor_id: string
   plan_value: PlanValue
   joined_at: string
-  status: 'active' | 'cancelled'
+  status: 'active' | 'cancelled' | 'pending'
   asaas_subscription_id?: string
   billing_type?: string
   donor?: Donor

@@ -20,6 +20,20 @@ export async function editSubscriptionPlan(
   revalidatePath('/admin/assinaturas')
 }
 
+export async function activateSubscription(subId: string, donorName: string) {
+  const db = createAdminClient()
+  await db.from('subscriptions').update({ status: 'active' }).eq('id', subId)
+  await logAudit({
+    action: 'activate_subscription',
+    entity: 'subscription',
+    entityId: subId,
+    entityLabel: donorName,
+    before: { status: 'Ag. Pagamento' },
+    after: { status: 'Ativa' },
+  })
+  revalidatePath('/admin/assinaturas')
+}
+
 export async function cancelSubscription(subId: string, donorName: string) {
   const db = createAdminClient()
   await db.from('subscriptions').update({ status: 'cancelled' }).eq('id', subId)

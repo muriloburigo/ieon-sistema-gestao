@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { editSubscriptionPlan, cancelSubscription } from './actions'
+import { editSubscriptionPlan, cancelSubscription, activateSubscription } from './actions'
 
-type SubStatus = 'active' | 'overdue' | 'user_inactive' | 'cancelled'
+type SubStatus = 'active' | 'overdue' | 'user_inactive' | 'cancelled' | 'pending_payment'
 
 function getStatus(sub: any): SubStatus {
   if (sub.status === 'cancelled') return 'cancelled'
+  if (sub.status === 'pending') return 'pending_payment'
   if (sub.donors?.status === 'inactive') return 'user_inactive'
   const currentMonth = new Date().toISOString().slice(0, 7)
   const payment = sub.payments?.find((p: any) => p.reference_month === currentMonth)
@@ -20,19 +21,21 @@ function getStatus(sub: any): SubStatus {
 }
 
 const STATUS_LABEL: Record<SubStatus, string> = {
-  active:        'Ativa',
-  overdue:       'Atrasado',
-  user_inactive: 'Inativo',
-  cancelled:     'Cancelada',
+  active:          'Ativa',
+  overdue:         'Atrasado',
+  user_inactive:   'Inativo',
+  cancelled:       'Cancelada',
+  pending_payment: 'Ag. Pagamento',
 }
 const STATUS_STYLE: Record<SubStatus, string> = {
-  active:        'bg-green-500/10 text-green-400 border-green-500/20',
-  overdue:       'bg-red-500/10 text-red-400 border-red-500/20',
-  user_inactive: 'bg-zinc-700/50 text-zinc-400 border-zinc-600',
-  cancelled:     'bg-zinc-700/30 text-zinc-500 border-zinc-700',
+  active:          'bg-green-500/10 text-green-400 border-green-500/20',
+  overdue:         'bg-red-500/10 text-red-400 border-red-500/20',
+  user_inactive:   'bg-zinc-700/50 text-zinc-400 border-zinc-600',
+  cancelled:       'bg-zinc-700/30 text-zinc-500 border-zinc-700',
+  pending_payment: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
 }
 
-const FILTERS = ['Todas', 'Ativas', 'Pendentes', 'Inativos', 'Canceladas', 'Atrasadas'] as const
+const FILTERS = ['Todas', 'Ativas', 'Ag. Pagamento', 'Pendentes', 'Inativos', 'Canceladas', 'Atrasadas'] as const
 
 export default function AssinaturasClient({ subscriptions }: { subscriptions: any[] }) {
   const [search, setSearch] = useState('')
@@ -53,6 +56,7 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
         const cur = new Date().toISOString().slice(0, 7)
         return s.payments?.some((p: any) => p.reference_month === cur && p.status === 'pending')
       })() :
+      filter === 'Ag. Pagamento' ? s._status === 'pending_payment' :
       filter === 'Inativos' ? s._status === 'user_inactive' :
       filter === 'Canceladas' ? s._status === 'cancelled' :
       filter === 'Atrasadas' ? s._status === 'overdue' : true
@@ -69,6 +73,11 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
   async function handleCancel(sub: any) {
     if (!confirm('Cancelar esta assinatura?')) return
     await cancelSubscription(sub.id, sub.donors?.name ?? sub.id)
+  }
+
+  async function handleActivate(sub: any) {
+    if (!confirm(`Ativar manualmente a assinatura de "${sub.donors?.name}"?`)) return
+    await activateSubscription(sub.id, sub.donors?.name ?? sub.id)
   }
 
   function exportCSV() {
@@ -160,16 +169,31 @@ export default function AssinaturasClient({ subscriptions }: { subscriptions: an
                         className="px-3 py-1 bg-zinc-700 text-zinc-300 text-xs rounded-lg hover:bg-zinc-600">✕</button>
                     </div>
                   ) : (
-                    <div className="flex gap-2">
-                      <button onClick={() => { setEditId(s.id); setEditPlan(s.plan_value) }}
-                        className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors">
-                        Editar
-                      </button>
-                      {s._status !== 'cancelled' && (
-                        <button onClick={() => handleCancel(s)}
-                          className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors">
-                          Cancelar
-                        </button>
+                    <div className="flex gap-2 flex-wrap">
+                      {s._status === 'pending_payment' ? (
+                        <>
+                          <button onClick={() => handleActivate(s)}
+                            className="px-3 py-1 bg-green-500/10 text-green-400 border border-green-500/20 text-xs rounded-lg hover:bg-green-500/20 transition-colors">
+                            Ativar
+                          </button>
+                          <button onClick={() => handleCancel(s)}
+                            className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors">
+                            Cancelar
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => { setEditId(s.id); setEditPlan(s.plan_value) }}
+                            className="px-3 py-1 bg-zinc-800 text-zinc-300 text-xs rounded-lg hover:bg-zinc-700 border border-zinc-700 transition-colors">
+                            Editar
+                          </button>
+                          {s._status !== 'cancelled' && (
+                            <button onClick={() => handleCancel(s)}
+                              className="px-3 py-1 bg-red-500/10 text-red-400 border border-red-500/20 text-xs rounded-lg hover:bg-red-500/20 transition-colors">
+                              Cancelar
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}

@@ -109,7 +109,7 @@ export async function POST(request: Request) {
         plan_value,
         joined_at: new Date().toISOString(),
         asaas_subscription_id: asaasSubscriptionId,
-        status: 'active',
+        status: 'pending',
       },
       { onConflict: 'donor_id' }
     )
