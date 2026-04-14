@@ -18,11 +18,16 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
   onDelete: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState({ top: 0, right: 0 })
+  const btnRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+      if (
+        menuRef.current && !menuRef.current.contains(e.target as Node) &&
+        btnRef.current && !btnRef.current.contains(e.target as Node)
+      ) setOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -34,10 +39,18 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
     return <span className="text-xs text-zinc-600 px-2">—</span>
   }
 
+  function handleOpen() {
+    if (!btnRef.current) return
+    const rect = btnRef.current.getBoundingClientRect()
+    setPos({ top: rect.bottom + window.scrollY + 4, right: window.innerWidth - rect.right })
+    setOpen(v => !v)
+  }
+
   return (
-    <div className="relative" ref={ref}>
+    <>
       <button
-        onClick={() => setOpen(v => !v)}
+        ref={btnRef}
+        onClick={handleOpen}
         disabled={isLoading}
         className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700 transition-colors disabled:opacity-40"
       >
@@ -48,8 +61,11 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
       </button>
 
       {open && (
-        <div className="absolute right-0 top-8 z-10 w-48 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl overflow-hidden">
-          {/* Toggle admin */}
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 50 }}
+          className="w-48 bg-zinc-800 border border-zinc-700 rounded-xl shadow-xl overflow-hidden"
+        >
           <button
             onClick={() => { setOpen(false); onToggleAdmin() }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
@@ -60,7 +76,6 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
             }
           </button>
 
-          {/* Toggle status */}
           <button
             onClick={() => { setOpen(false); onToggleStatus() }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors"
@@ -73,7 +88,6 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
 
           <div className="border-t border-zinc-700 my-0.5" />
 
-          {/* Delete */}
           <button
             onClick={() => { setOpen(false); onDelete() }}
             className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
@@ -82,7 +96,7 @@ function ActionsMenu({ u, isSelf, actionId, onToggleAdmin, onToggleStatus, onDel
           </button>
         </div>
       )}
-    </div>
+    </>
   )
 }
 
