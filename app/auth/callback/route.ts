@@ -11,9 +11,17 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient()
 
   if (code) {
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      return NextResponse.redirect(`${origin}/login?error=link_expirado`)
+    }
   } else if (token_hash && type) {
-    await supabase.auth.verifyOtp({ token_hash, type: type as any })
+    const { error } = await supabase.auth.verifyOtp({ token_hash, type: type as any })
+    if (error) {
+      return NextResponse.redirect(`${origin}/login?error=link_expirado`)
+    }
+  } else {
+    return NextResponse.redirect(`${origin}/login`)
   }
 
   return NextResponse.redirect(`${origin}${next}`)

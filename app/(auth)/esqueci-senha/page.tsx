@@ -17,7 +17,7 @@ export default function EsqueciSenhaPage() {
 
     const supabase = createClient()
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?token_hash=&type=recovery&next=/redefinir-senha`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/redefinir-senha`,
     })
 
     if (error) {
